@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class AnswerEntryScreen extends StatefulWidget {
   final String? initialTestName;
@@ -31,10 +32,20 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
     String testName = _testNameController.text;
     List<String> answersList = answers;
 
-    // Save the test name and answers
-    await prefs.setString('testName', testName);
-    await prefs.setStringList('answers', answersList);
+    // Load existing tests
+    String? savedTestsJson = prefs.getString('savedTests');
+    List<Map<String, dynamic>> savedTests = savedTestsJson != null
+        ? List<Map<String, dynamic>>.from(jsonDecode(savedTestsJson))
+        : [];
 
+    // Add new test
+    savedTests.add({
+      'testName': testName,
+      'answers': answersList,
+    });
+
+    // Save updated list
+    await prefs.setString('savedTests', jsonEncode(savedTests));
     Navigator.pop(context, {
       'testName': testName,
       'answers': answersList,
@@ -51,7 +62,7 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.popUntil(context, ModalRoute.withName('/home'));
           },
         ),
         actions: [
@@ -92,7 +103,7 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
                         SizedBox(width: 16),
                         for (var option in ['A', 'B', 'C', 'D'])
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
                             child: ChoiceChip(
                               label: Text(option),
                               selected: answers[index] == option,

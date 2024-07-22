@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +13,9 @@ import 'page/result_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Home extends StatefulWidget {
+  final String? m;
+  Home({this.m});
+
   @override
   _HomeState createState() => _HomeState();
 }
@@ -24,30 +28,107 @@ class _HomeState extends State<Home> {
   List<String>? _testAnswers;
   List<Map<String, dynamic>> _savedTests = [];
   int? _answer_index;
+  late String _id;
+  bool _isLoading = false;
+  String? _errorMessage;
+  List<String> groups = [];
+  late String _selectedGroup;
+  List<Map<String, String>> studentDetails = [];
+  String? groupName2;
+
 
   @override
+
+
   void initState() {
     super.initState();
     _loadSavedTests();
+    _loadGroups();
   }
+  Future<void> _loadGroups() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      groups = prefs.getStringList('groups') ?? [];
+    });
+  }
+
 
   Future<void> _loadSavedTests() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? testName = prefs.getString('testName');
-    List<String>? answers = prefs.getStringList('answers');
-
-    if (testName != null && answers != null) {
+    String? savedTestsJson = prefs.getString('savedTests');
+    if (savedTestsJson != null) {
+      List<Map<String, dynamic>> savedTests = List<Map<String, dynamic>>.from(
+          jsonDecode(savedTestsJson));
       setState(() {
-        _savedTests = [
-          {
-            'testName': testName,
-            'answers': answers,
-          }
-        ];
+        _savedTests = savedTests;
       });
     }
   }
-  Future<void> _pickImage(ImageSource source, {int? ans_index} ) async {
+
+  Future<void> _showGroupSelectionDialog({int? answers}) async {
+    String? selectedGroup;
+    TextEditingController idController = TextEditingController();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button to close the dialog.
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Select Group and Enter ID'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedGroup,
+                hint: Text('Select Group'),
+                items: groups.map((group) {
+                  return DropdownMenuItem<String>(
+                    value: group,
+                    child: Text(group),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedGroup = value;
+                  });
+                },
+              ),
+              TextField(
+                controller: idController,
+                decoration: InputDecoration(labelText: 'Enter ID'),
+                keyboardType:TextInputType.number,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Submit'),
+              onPressed: () {
+                if (selectedGroup != null && idController.text.isNotEmpty) {
+                  setState(() {
+                    _selectedGroup = selectedGroup!;
+                    _id = idController.text;
+                  });
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera, ans_index: answers);
+                } else {
+                  // Show error message or validate input
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source, {int? ans_index}) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
 
@@ -70,6 +151,7 @@ class _HomeState extends State<Home> {
       }
     }
   }
+
 
   Future<File> resizeImage(File imageFile, int width, int height) async {
     // Read the image file as bytes
@@ -98,59 +180,81 @@ class _HomeState extends State<Home> {
   }
   Future<void> _sendImage() async {
     if (_base64Image != null && _answer_index != null) {
-      // try {
-      final url = Uri.parse('https://omrapi-48a67da55efc.herokuapp.com/');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-        body: jsonEncode({
-          'image': 'data:image/jpeg;base64,$_base64Image',
-          'answers': _savedTests[_answer_index!]['answers'].map((answer) {
-            switch (answer) {
-              case 'A':
-                return 0;
-              case 'B':
-                return 1;
-              case 'C':
-                return 2;
-              case 'D':
-                return 3;
-              default:
-                return -1; // for unanswered
-            }
-          }).toList(),
-        }),
-      ).timeout(const Duration(seconds: 15));
+      try {
+        final url = Uri.parse('https://omrapi-48a67da55efc.herokuapp.com/');
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'image': 'data:image/jpeg;base64,$_base64Image',
+            'answers': _savedTests[_answer_index!]['answers'].map((answer) {
+              switch (answer) {
+                case 'A':
+                  return 0;
+                case 'B':
+                  return 1;
+                case 'C':
+                  return 2;
+                case 'D':
+                  return 3;
+                default:
+                  return -1; // for unanswered
+              }
+            }).toList(),
+            'group': _selectedGroup,
+            'id': _id,
+          }),
+        ).timeout(const Duration(seconds: 15));
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ResultScreen(
-              correctAnswers: jsonResponse['Correct'],
-              incorrectAnswers: jsonResponse['F'],
-              unansweredQuestions: jsonResponse['N'],
-              score: jsonResponse['D'],
-              studentName: 'Rajapboyev A.',
+        if (response.statusCode == 200) {
+          final jsonResponse = jsonDecode(response.body);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ResultScreen(
+                correctAnswers: jsonResponse['Correct'],
+                incorrectAnswers: jsonResponse['F'],
+                unansweredQuestions: jsonResponse['N'],
+                score: jsonResponse['D'],
+                groupName: _selectedGroup,
+                id: _id,
+                testName: _savedTests[_answer_index!]['testName'],
+              ),
             ),
-          ),
-        );
-      } else {
-        print('Failed to send image: ${response.statusCode}');
+          );
+        } else {
+          setState(() {
+            _errorMessage = 'Failed to send image: ${response.statusCode}';
+          });
+        }
+      } on SocketException catch (_) {
+        setState(() {
+          _errorMessage = 'Internet connection problem';
+        });
+      } on TimeoutException catch (_) {
+        setState(() {
+          _errorMessage = 'The connection has timed out';
+        });
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred';
+        });
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
-      // } on SocketException catch (e) {
-      //   print('SocketException: $e');
-      // } on TimeoutException catch (e) {
-      //   print('TimeoutException: $e');
-      // } catch (e) {
-      //   print('Exception: $e');
-      // }
     } else {
-      print('No image to send or no test selected');
+      setState(() {
+        _errorMessage = 'No image to send or no test selected';
+      });
     }
   }
 
@@ -164,7 +268,7 @@ class _HomeState extends State<Home> {
         MaterialPageRoute(
           builder: (context) => AnswerEntryScreen(
             initialTestName: _savedTests[editIndex]['testName'],
-            initialAnswers: _savedTests[editIndex]['answers'],
+            initialAnswers: List<String>.from(_savedTests[editIndex]['answers']),
           ),
         ),
       );
@@ -182,35 +286,48 @@ class _HomeState extends State<Home> {
         if (editIndex != null) {
           _savedTests[editIndex] = {
             'testName': result?['testName'],
-            'answers': result?['answers'],
+            'answers': List<String>.from(result?['answers']),
           };
         } else {
           _savedTests.add({
             'testName': result?['testName'],
-            'answers': result?['answers'],
+            'answers': List<String>.from(result?['answers']),
           });
         }
       });
       // Save to shared preferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('testName', result['testName']);
-      await prefs.setStringList('answers', List<String>.from(result['answers']));
+      await prefs.setString('savedTests', jsonEncode(_savedTests));
       print('Test Name: ${result['testName']}');
       print('Test Answers: ${result['answers']}');
     }
   }
 
-  void _deleteTest(int index) {
-    setState(() {
-      _savedTests.removeAt(index);
-      if (_answer_index == index) {
-        _answer_index = null;
-      } else if (_answer_index != null && _answer_index! > index) {
-        _answer_index = _answer_index! - 1;
-      }
-    });
+  void _deleteTest(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Load existing tests
+    String? savedTestsJson = prefs.getString('savedTests');
+    List<Map<String, dynamic>> savedTests = savedTestsJson != null
+        ? List<Map<String, dynamic>>.from(jsonDecode(savedTestsJson))
+        : [];
+
+    // Remove the test at the specified index
+    if (index >= 0 && index < savedTests.length) {
+      savedTests.removeAt(index);
+
+      // Save the updated list
+      await prefs.setString('savedTests', jsonEncode(savedTests));
+
+      // Update the UI
+      setState(() {
+        _savedTests = savedTests;
+      });
+    }
   }
+
   @override
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -270,7 +387,7 @@ class _HomeState extends State<Home> {
                 ],
               )
                   : ListView.builder(
-                itemCount: _savedTests.length,
+                itemCount: _savedTests.reversed.length,
                 itemBuilder: (context, index) {
                   return GestureDetector(
                     child: Container(
@@ -292,7 +409,7 @@ class _HomeState extends State<Home> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            _savedTests[index]['testName'] ?? 'No name',
+                            _savedTests[(index)]['testName'] ?? 'No name',
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           Row(
@@ -308,7 +425,7 @@ class _HomeState extends State<Home> {
                               IconButton(
                                 icon: Icon(Icons.camera),
                                 onPressed: () =>
-                                    _pickImage(ImageSource.camera, ans_index : index),
+                                    _showGroupSelectionDialog(answers: index),
                               ),
                             ],
                           ),
@@ -319,9 +436,18 @@ class _HomeState extends State<Home> {
                 },
               ),
             ),
+            if (_isLoading)
+              CircularProgressIndicator(),
+            if (_errorMessage != null)
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Colors.red),
+              ),
           ],
         ),
+
       ),
+
       floatingActionButton: Align(
         alignment: Alignment.bottomRight,
         child: Padding(
