@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application/Navigator_page/Results_page/page/group_detail_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_application/Navigator_page/Results_page/page/group_detail_page.dart';
 
 class GroupPage extends StatefulWidget {
   @override
@@ -10,6 +10,7 @@ class GroupPage extends StatefulWidget {
 
 class _GroupPageState extends State<GroupPage> {
   List<String> groups = [];
+  Map<String, int> studentCounts = {}; // Store student counts for each group
 
   @override
   void initState() {
@@ -21,6 +22,26 @@ class _GroupPageState extends State<GroupPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       groups = prefs.getStringList('groups') ?? [];
+      _loadStudentCounts();
+    });
+  }
+
+  Future<void> _loadStudentCounts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, int> counts = {};
+
+    for (String group in groups) {
+      String? studentDetailsString = prefs.getString(group);
+      if (studentDetailsString != null) {
+        List<dynamic> decodedList = json.decode(studentDetailsString);
+        counts[group] = decodedList.length;
+      } else {
+        counts[group] = 0;
+      }
+    }
+
+    setState(() {
+      studentCounts = counts;
     });
   }
 
@@ -61,6 +82,7 @@ class _GroupPageState extends State<GroupPage> {
     if (newGroupName != null && newGroupName.isNotEmpty) {
       setState(() {
         groups.add(newGroupName);
+        studentCounts[newGroupName] = 0; // Initialize student count for new group
       });
       _saveGroups();
     }
@@ -122,6 +144,7 @@ class _GroupPageState extends State<GroupPage> {
     if (groupsToDelete.isNotEmpty) {
       setState(() {
         groups.removeWhere((group) => groupsToDelete.contains(group));
+        studentCounts.removeWhere((key, value) => groupsToDelete.contains(key));
       });
       _saveGroups();
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -168,13 +191,35 @@ class _GroupPageState extends State<GroupPage> {
                 MaterialPageRoute(builder: (context) => GroupDetailPage(groupName: groups[index])),
               );
             },
-            child: Container(
+            child: Card(
               margin: EdgeInsets.all(10),
-              padding: EdgeInsets.all(20),
-              color: Colors.blueAccent,
-              child: Text(
-                groups[index],
-                style: TextStyle(color: Colors.white, fontSize: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              elevation: 5,
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blueAccent, Colors.lightBlue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      groups[index],
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${studentCounts[groups[index]] ?? 0} Students',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

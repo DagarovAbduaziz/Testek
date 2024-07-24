@@ -39,6 +39,7 @@ dependencies:
   curved_navigation_bar: ^1.0.6
   provider: ^6.1.2
   shared_preferences: ^2.0.15
+  permission_handler: ^10.2.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -70,6 +71,7 @@ flutter_icons:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    - assets/add2.png
     - assets/img.png
     - assets/img_1.png
     - assets/icons/logo.png

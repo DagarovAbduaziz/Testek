@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../home.dart';
 
 class ResultScreen extends StatefulWidget {
   final String groupName;
@@ -74,8 +77,11 @@ class _ResultScreenState extends State<ResultScreen> {
     prefs.setString(widget.groupName, json.encode(studentDetails));
 
     // Navigate back
-    Navigator.pop(context);
-  }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => Main()),
+          (Route<dynamic> route) => false,
+    );  }
 
   @override
   Widget build(BuildContext context) {

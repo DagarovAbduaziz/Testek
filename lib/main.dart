@@ -5,8 +5,7 @@ import 'package:flutter_application/Navigator_page/Home_page/home.dart';
 import 'package:flutter_application/Navigator_page/Results_page/result.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'Navigator_page/Home_page/page/answerscreen.dart';
+
 
 
 void main() {
@@ -14,44 +13,63 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      home: SplashScreen(),
       initialRoute: '/',
       routes: {
         '/home': (context) => Home(),
       },
-      home: Main(),
     );
   }
 }
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Timer(Duration(seconds: 2), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Main()),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Image.asset(
+          'assets/icons/logo.png', // Path to your logo image
+          width: 200,
+          height: 200,
+        ),
+      ),
+    );
+  }
+}
+
+
 class Main extends StatefulWidget {
+
   @override
   _MainState createState() => _MainState();
 }
 
 class _MainState extends State<Main> {
-
-  List<Map<String, dynamic>> _savedTests = [];
-
   @override
-  void initState() {
-    super.initState();
-    _loadSavedTests();
-  }
 
-  Future<void> _loadSavedTests() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedTestsJson = prefs.getString('savedTests');
-    if (savedTestsJson != null) {
-      List<Map<String, dynamic>> savedTests = List<Map<String, dynamic>>.from(
-          jsonDecode(savedTestsJson));
-      setState(() {
-        _savedTests = savedTests;
-      });
-    }
-  }
+
+
   List Screens = [
     Home(),
     GroupPage()
@@ -60,34 +78,22 @@ class _MainState extends State<Main> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: CurvedNavigationBar(
+        bottomNavigationBar: CurvedNavigationBar(
           index: selectedIndex,
           items: [
-            Icon(Icons.home, size: 40,),
-            Icon(Icons.menu, size: 40)
-      ],
+            Icon(Icons.home, size: 35,),
+            Icon(Icons.menu, size: 35)
+          ],
 
-        onTap: (index) async {
-          setState(() {
-            selectedIndex = index;
+          onTap: (index) async {
+            setState(() {
+              selectedIndex = index;
             }
-          );
-        },
-          ),
-      // floatingActionButton: FloatingActionButton(
-      //   child: Icon(Icons.add, color: Colors.white,),
-      //   backgroundColor: Colors.lightBlue,
-      //   onPressed: () => _navigateToAnswerEntry(),
-      //   shape: RoundedRectangleBorder(
-      //     borderRadius: BorderRadius.circular(30),
-      //   ),
-      // ),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      body: Screens[selectedIndex]
+            );
+          },
+        ),
+        body: Screens[selectedIndex]
 
     );
   }
 }
-
-
-

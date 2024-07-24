@@ -62,7 +62,7 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.popUntil(context, ModalRoute.withName('/home'));
+            Navigator.pop(context);
           },
         ),
         actions: [
@@ -83,7 +83,7 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
             TextField(
               controller: _testNameController,
               decoration: InputDecoration(
-                labelText: 'Test Name',
+                labelText: 'Test Nomi',
               ),
             ),
             SizedBox(height: 16),

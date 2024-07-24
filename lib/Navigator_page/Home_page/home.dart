@@ -1,4 +1,4 @@
-import 'dart:ffi';
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,13 +8,14 @@ import 'dart:async';
 import 'package:image/image.dart'as img;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../main.dart';
+import 'confirm_ImageScreen.dart';
 import 'page/answerscreen.dart';
 import 'page/result_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Home extends StatefulWidget {
-  final String? m;
-  Home({this.m});
 
   @override
   _HomeState createState() => _HomeState();
@@ -24,9 +25,8 @@ class _HomeState extends State<Home> {
   File? _image;
   File? _image2;
   String? _base64Image;
-  String? _testName;
-  List<String>? _testAnswers;
   List<Map<String, dynamic>> _savedTests = [];
+  int? _index;
   int? _answer_index;
   late String _id;
   bool _isLoading = false;
@@ -45,6 +45,20 @@ class _HomeState extends State<Home> {
     _loadSavedTests();
     _loadGroups();
   }
+
+  Future<void> _checkPermissions() async {
+    var status = await Permission.storage.status;
+    if (status.isDenied) {
+      // Request the permission
+      if (await Permission.storage.request().isGranted) {
+        print('Storage permission granted');
+      } else {
+        print('Storage permission denied');
+      }
+    }
+    // You can check other permissions similarly
+  }
+
   Future<void> _loadGroups() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -65,7 +79,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  Future<void> _showGroupSelectionDialog({int? answers}) async {
+  Future<void> _showGroupSelectionDialog({int? index}) async {
     String? selectedGroup;
     TextEditingController idController = TextEditingController();
 
@@ -109,14 +123,21 @@ class _HomeState extends State<Home> {
             ),
             TextButton(
               child: Text('Submit'),
-              onPressed: () {
+              onPressed: () async {
+                if ( await Permission.camera.request().isGranted) {
+                    print('Camera permission granted');
+                    }
+                else {
+                      print('Camera permission denied');
+                      }
                 if (selectedGroup != null && idController.text.isNotEmpty) {
                   setState(() {
                     _selectedGroup = selectedGroup!;
+                    _index = index;
                     _id = idController.text;
                   });
-                  Navigator.of(context).pop();
-                  _pickImage(ImageSource.camera, ans_index: answers);
+                  _pickImage(ImageSource.camera, ans_index: index);
+                  Navigator.pop(context);
                 } else {
                   // Show error message or validate input
                 }
@@ -143,6 +164,7 @@ class _HomeState extends State<Home> {
           _answer_index = ans_index;
           _base64Image = base64Encode(_image2!.readAsBytesSync());
         });
+
 
         _sendImage(); // Automatically send the image after picking
       } catch (e) {
@@ -178,7 +200,9 @@ class _HomeState extends State<Home> {
 
     return resizedImageFile;
   }
+
   Future<void> _sendImage() async {
+    Uint8List resizedImageBytes;
     if (_base64Image != null && _answer_index != null) {
       setState(() {
         _isLoading = true;
@@ -215,10 +239,25 @@ class _HomeState extends State<Home> {
 
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(response.body);
+          Uint8List bytes = base64Decode(jsonResponse['encode']);
+
+          // Resize image
+          img.Image image = img.decodeImage(Uint8List.fromList(bytes))!;
+          img.Image resized = img.copyResize(image, width: 400, height: 600); // Resize dimensions as needed
+
+          // Encode image back to base64
+          Uint8List resizedBytes = Uint8List.fromList(img.encodePng(resized));
+          resizedImageBytes = resizedBytes;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ResultScreen(
+                builder: (context) => ConfirmImageScreen(
+                  resizedBytes: resizedImageBytes,
+                    onConfirm: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResultScreen(
                 correctAnswers: jsonResponse['Correct'],
                 incorrectAnswers: jsonResponse['F'],
                 unansweredQuestions: jsonResponse['N'],
@@ -226,7 +265,15 @@ class _HomeState extends State<Home> {
                 groupName: _selectedGroup,
                 id: _id,
                 testName: _savedTests[_answer_index!]['testName'],
-              ),
+                          ),
+                        ),
+                      );
+                    },
+                  onRetake: () {
+
+                    _pickImage(ImageSource.camera, ans_index: _index); // Go back to CameraScreen
+                  },
+                ),
             ),
           );
         } else {
@@ -331,14 +378,17 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/img_1.png', width: 180, height: 70),
+        title: Image.asset('assets/img_1.png', width: 180, height: 50),
         actions: [
-          TextButton(
-            onPressed: () {},
+          FloatingActionButton(mini: true,
+            onPressed: _navigateToAnswerEntry,
+            backgroundColor: Colors.indigoAccent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
             child: Text('?', style: TextStyle(color: Colors.white, fontSize: 20)),
-            style: TextButton.styleFrom(backgroundColor: Colors.indigoAccent),
           ),
-          SizedBox(height: 50),
+          SizedBox()
         ],
       ),
       body: Center(
@@ -383,11 +433,11 @@ class _HomeState extends State<Home> {
                     height: 200,
                   ),
                   SizedBox(height: 20),
-                  Text('No tests available. Please add a test.'),
+                  Text("Testlar mavjud emas. Iltimos test qo'shing"),
                 ],
               )
                   : ListView.builder(
-                itemCount: _savedTests.reversed.length,
+                itemCount: _savedTests.reversed.toList().length,
                 itemBuilder: (context, index) {
                   return GestureDetector(
                     child: Container(
@@ -415,17 +465,17 @@ class _HomeState extends State<Home> {
                           Row(
                             children: [
                               IconButton(
-                                icon: Icon(Icons.edit),
-                                onPressed: () => _navigateToAnswerEntry(editIndex: index),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
+                                icon: Icon(Icons.delete, color: Colors.red,),
                                 onPressed: () => _deleteTest(index),
                               ),
                               IconButton(
-                                icon: Icon(Icons.camera),
+                                icon: Icon(Icons.edit, color: Colors.green,),
+                                onPressed: () => _navigateToAnswerEntry(editIndex: index),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.camera, size: 40,),
                                 onPressed: () =>
-                                    _showGroupSelectionDialog(answers: index),
+                                    _showGroupSelectionDialog(index: index),
                               ),
                             ],
                           ),
@@ -451,11 +501,14 @@ class _HomeState extends State<Home> {
       floatingActionButton: Align(
         alignment: Alignment.bottomRight,
         child: Padding(
-          padding: const EdgeInsets.only(right: 40.0, bottom: 20.0),
+          padding: const EdgeInsets.only(right: 40, bottom: 20.0),
           child: FloatingActionButton(
             onPressed: _navigateToAnswerEntry,
-            backgroundColor: Colors.lightBlue,
-            child: Icon(Icons.add),
+            backgroundColor: Colors.blue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(Icons.add, color: Colors.white,),
           ),
         ),
       ),

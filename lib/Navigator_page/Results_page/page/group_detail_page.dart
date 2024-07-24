@@ -17,6 +17,8 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
   List<Map<String, dynamic>> _filteredStudents = [];
   int currentId = 1;
   String? selectedTestName;
+  bool _showDefaultImage = true;// Flag to control the visibility of the default image
+  bool _showDefaultTest = true;// Flag to control the visibility of the default image
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
         _filteredStudents = studentDetails;
         if (studentDetails.isNotEmpty) {
           currentId = studentDetails.map((e) => int.parse(e['id'])).reduce((a, b) => a > b ? a : b) + 1;
+          _showDefaultImage = false; // Hide default image if there are students
         }
       });
     }
@@ -48,6 +51,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
       setState(() {
         _savedTests = savedTests;
       });
+      _showDefaultTest = false;
     }
   }
 
@@ -125,8 +129,10 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
             currentId++;
           }
         }
+        _showDefaultImage = false; // Hide default image when students are added
       });
       _saveStudentDetails();
+      _filteredStudents = studentDetails;
     }
   }
 
@@ -136,6 +142,9 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
       _filteredStudents = selectedTestName == null
           ? studentDetails
           : studentDetails.where((student) => student['testName'] == selectedTestName).toList();
+      if (studentDetails.isEmpty) {
+        _showDefaultImage = true; // Show default image if no students are left
+      }
     });
     _saveStudentDetails();
   }
@@ -164,12 +173,26 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              'Tests',
+              'Testlar',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-          ),
-          Container(
-            height: 100,
+          ),_showDefaultTest
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 20),
+                Text(
+                  'Testlar mavjud emas',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18),
+                ),
+              ],
+            ),
+          )
+
+          :Container(
+            height: 80,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _savedTests.length,
@@ -179,7 +202,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                   child: Card(
                     margin: EdgeInsets.all(10),
                     child: Container(
-                      width: 150,
+                      width: 100,
                       padding: EdgeInsets.all(16),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -189,8 +212,6 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: 10),
-
                         ],
                       ),
                     ),
@@ -201,37 +222,57 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Students',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: _filteredStudents.length,
-            itemBuilder: (context, index) {
-              return Card(
-                margin: EdgeInsets.all(10),
-                child: ListTile(
-                  title: Text(_filteredStudents[index]['name']),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Students',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                _showDefaultImage
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('ID: ${_filteredStudents[index]['id']}'),
-                      Text('Correct Answers: ${_filteredStudents[index]['correctanswer']}'),
-                      Text('Incorrect Answers: ${_filteredStudents[index]['incorrectanswer']}'),
-                      Text('Score: ${_filteredStudents[index]['score']}'),
-                      Text('Test Name: ${_filteredStudents[index]['testName'] ?? 'N/A'}'),
+                      Image.asset('assets/add2.png'), // Replace with your default image asset
+                      SizedBox(height: 20),
+                      Text(
+                        "O'quvchilar mavjud emas. Iltimos qo'shing",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 18),
+                      ),
                     ],
                   ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteStudent(_filteredStudents[index]['id']),
-                  ),
+                )
+                :ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: _filteredStudents.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      margin: EdgeInsets.all(10),
+                      child: ListTile(
+                        title: Text(_filteredStudents[index]['name']),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ID: ${_filteredStudents[index]['id']}'),
+                            Text('Correct Answers: ${_filteredStudents[index]['correctanswer']}'),
+                            Text('Incorrect Answers: ${_filteredStudents[index]['incorrectanswer']}'),
+                            Text('Score: ${_filteredStudents[index]['score']}'),
+                            Text('Test Name: ${_filteredStudents[index]['testName'] ?? 'N/A'}'),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteStudent(_filteredStudents[index]['id']),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ],
       ),
