@@ -88,13 +88,13 @@ class _HomeState extends State<Home> {
       barrierDismissible: false, // User must tap a button to close the dialog.
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Select Group and Enter ID'),
+          title: Text("O'quvchi malumotlari"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: selectedGroup,
-                hint: Text('Select Group'),
+                hint: Text('Guruh tanlang'),
                 items: groups.map((group) {
                   return DropdownMenuItem<String>(
                     value: group,
@@ -109,20 +109,20 @@ class _HomeState extends State<Home> {
               ),
               TextField(
                 controller: idController,
-                decoration: InputDecoration(labelText: 'Enter ID'),
+                decoration: InputDecoration(labelText: 'ID kiriting'),
                 keyboardType:TextInputType.number,
               ),
             ],
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
+              child: Text('Bekor qilish'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Submit'),
+              child: Text('Saqlash'),
               onPressed: () async {
                 if ( await Permission.camera.request().isGranted) {
                     print('Camera permission granted');
@@ -278,16 +278,16 @@ class _HomeState extends State<Home> {
           );
         } else {
           setState(() {
-            _errorMessage = 'Failed to send image: ${response.statusCode}';
+            _errorMessage = 'Rasmga olishda xatolik';
           });
         }
       } on SocketException catch (_) {
         setState(() {
-          _errorMessage = 'Internet connection problem';
+          _errorMessage = 'Internetga ulanishda xatolik';
         });
       } on TimeoutException catch (_) {
         setState(() {
-          _errorMessage = 'The connection has timed out';
+          _errorMessage = 'Serverga ulasnishda xatolik';
         });
       } catch (e) {
         setState(() {
@@ -400,7 +400,7 @@ class _HomeState extends State<Home> {
               height: 40,
               width: 300,
               decoration: BoxDecoration(
-                color: Color.fromRGBO(90, 248, 64, 100),
+                color: Colors.lightBlueAccent,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
@@ -418,7 +418,7 @@ class _HomeState extends State<Home> {
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ), SizedBox(height: 15),
@@ -433,7 +433,7 @@ class _HomeState extends State<Home> {
                     height: 200,
                   ),
                   SizedBox(height: 20),
-                  Text("Testlar mavjud emas. Iltimos test qo'shing"),
+                  Text("Testlar mavjud emas. Iltimos test qo'shing!"),
                 ],
               )
                   : ListView.builder(
@@ -486,6 +486,7 @@ class _HomeState extends State<Home> {
                 },
               ),
             ),
+
             if (_isLoading)
               CircularProgressIndicator(),
             if (_errorMessage != null)
@@ -493,6 +494,8 @@ class _HomeState extends State<Home> {
                 _errorMessage!,
                 style: TextStyle(color: Colors.red),
               ),
+            SizedBox(height: 20)
+
           ],
         ),
 
@@ -511,51 +514,6 @@ class _HomeState extends State<Home> {
             child: Icon(Icons.add, color: Colors.white,),
           ),
         ),
-      ),
-    );
-  }
-}
-
-
-
-class DisplayImageScreen extends StatelessWidget {
-  final String imagePath;
-  final VoidCallback onConfirm;
-
-  DisplayImageScreen({
-    required this.imagePath,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Confirm Image'),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.file(File(imagePath)),
-          SizedBox(height: 20),
-          Text('Do you want to proceed with this image?'),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('Retake'),
-              ),
-              ElevatedButton(
-                onPressed: onConfirm,
-                child: Text('Confirm'),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

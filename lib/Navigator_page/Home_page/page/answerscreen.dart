@@ -65,15 +65,7 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
             Navigator.pop(context);
           },
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text('?', style: TextStyle(color: Colors.white, fontSize: 20)),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.blue,
-            ),
-          ),
-        ],
+
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -90,24 +82,42 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
             Text('$markedAnswers/20', style: TextStyle(fontSize: 20)),
             SizedBox(height: 16),
             Expanded(
+              child:Container(
+                width: 350,
+              decoration: BoxDecoration(
+                color:  Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 5,
+                    blurRadius: 7,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
               child: ListView.builder(
+
                 itemCount: 20,
                 itemBuilder: (context, index) {
-                  return Padding(
+                  return
+
+                    Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       children: [
+                        SizedBox(width: 10),
                         CircleAvatar(
                           child: Text('${index + 1}'),
                         ),
-                        SizedBox(width: 16),
+                        SizedBox(width: 30),
                         for (var option in ['A', 'B', 'C', 'D'])
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4.0),
                             child: ChoiceChip(
                               label: Text(option),
                               selected: answers[index] == option,
-                              selectedColor: Colors.green,
+                              selectedColor: Color.fromRGBO(10, 235, 5, 100),
                               onSelected: (selected) {
                                 setState(() {
                                   answers[index] = selected ? option : '';
@@ -120,11 +130,12 @@ class _AnswerEntryScreenState extends State<AnswerEntryScreen> {
                   );
                 },
               ),
+              ),
             ),
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: _saveTest,
-              child: Text('Save'),
+              child: Text('Saqlash'),
             ),
           ],
         ),

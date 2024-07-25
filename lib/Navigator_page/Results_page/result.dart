@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application/Navigator_page/Results_page/page/group_detail_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class GroupPage extends StatefulWidget {
   @override
@@ -9,8 +11,10 @@ class GroupPage extends StatefulWidget {
 }
 
 class _GroupPageState extends State<GroupPage> {
+  final Uri _url = Uri.parse('https://online.publuu.com/596170/1336392');
   List<String> groups = [];
-  Map<String, int> studentCounts = {}; // Store student counts for each group
+  Map<String, int> studentCounts = {};
+  bool _showDefaultImage = true;
 
   @override
   void initState() {
@@ -23,6 +27,9 @@ class _GroupPageState extends State<GroupPage> {
     setState(() {
       groups = prefs.getStringList('groups') ?? [];
       _loadStudentCounts();
+      if (groups.isNotEmpty) {
+        _showDefaultImage = false;
+      }
     });
   }
 
@@ -50,26 +57,33 @@ class _GroupPageState extends State<GroupPage> {
     prefs.setStringList('groups', groups);
   }
 
+
+  void _navigateToGoogle() async {
+    if (!await launchUrl(_url)) {
+      throw Exception('Could not launch $_url');
+    }
+  }
+
   void _createNewGroup() async {
     String? newGroupName = await showDialog(
       context: context,
       builder: (BuildContext context) {
         TextEditingController _groupNameController = TextEditingController();
         return AlertDialog(
-          title: Text('Create New Group'),
+          title: Text('Yangi Guruh Yaratish'),
           content: TextField(
             controller: _groupNameController,
-            decoration: InputDecoration(hintText: "Enter group name"),
+            decoration: InputDecoration(hintText: "Guruh nomini kiriting"),
           ),
           actions: [
             TextButton(
-              child: Text('Cancel'),
+              child: Text('Bekor qilish'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Save'),
+              child: Text('Saqlash'),
               onPressed: () {
                 Navigator.of(context).pop(_groupNameController.text);
               },
@@ -83,6 +97,7 @@ class _GroupPageState extends State<GroupPage> {
       setState(() {
         groups.add(newGroupName);
         studentCounts[newGroupName] = 0; // Initialize student count for new group
+        _showDefaultImage = false;
       });
       _saveGroups();
     }
@@ -96,7 +111,7 @@ class _GroupPageState extends State<GroupPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Delete Groups'),
+              title: Text("Guruhlarni o'chirish"),
               content: Container(
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -117,13 +132,13 @@ class _GroupPageState extends State<GroupPage> {
               ),
               actions: [
                 TextButton(
-                  child: Text('Cancel'),
+                  child: Text('Bekor qilish'),
                   onPressed: () {
                     Navigator.of(context).pop([]);
                   },
                 ),
                 TextButton(
-                  child: Text('Delete'),
+                  child: Text("O'chirish"),
                   onPressed: () {
                     List<String> groupsToDelete = [];
                     for (int i = 0; i < selectedGroups.length; i++) {
@@ -151,6 +166,9 @@ class _GroupPageState extends State<GroupPage> {
       for (String group in groupsToDelete) {
         prefs.remove(group);
       }
+      if (groups.isEmpty) {
+        _showDefaultImage = true;
+      }
     }
   }
 
@@ -158,7 +176,7 @@ class _GroupPageState extends State<GroupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Groups'),
+        title: Text('Guruhlar'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (String result) {
@@ -166,22 +184,44 @@ class _GroupPageState extends State<GroupPage> {
                 _createNewGroup();
               } else if (result == 'delete') {
                 _deleteGroup();
+              } else if (result == 'sheet') {
+                _navigateToGoogle();
               }
             },
             itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
               const PopupMenuItem<String>(
                 value: 'create',
-                child: Text('Create New Group'),
+                child: Text('Yangi Guruh'),
               ),
               const PopupMenuItem<String>(
                 value: 'delete',
-                child: Text('Delete Group'),
+                child: Text("Guruhni O'chirish"),
+              ),
+              const PopupMenuItem<String>(
+                value: 'sheet',
+                child: Text('Test Varaqasi'),
               ),
             ],
           ),
         ],
       ),
-      body: ListView.builder(
+      body:
+      _showDefaultImage
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/menu_img.png', height: 400, width: 300,), // Replace with your default image asset
+            SizedBox(height: 1),
+            Text(
+              'Guruhlar mavjud emas',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18,),
+            ),
+          ],
+        ),
+      )
+      :ListView.builder(
         itemCount: groups.length,
         itemBuilder: (context, index) {
           return GestureDetector(
@@ -190,6 +230,7 @@ class _GroupPageState extends State<GroupPage> {
                 context,
                 MaterialPageRoute(builder: (context) => GroupDetailPage(groupName: groups[index])),
               );
+              _loadGroups();
             },
             child: Card(
               margin: EdgeInsets.all(10),
@@ -215,7 +256,7 @@ class _GroupPageState extends State<GroupPage> {
                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      '${studentCounts[groups[index]] ?? 0} Students',
+                      "${studentCounts[groups[index]] ?? 0} O'quvchilar",
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ],

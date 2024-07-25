@@ -17,8 +17,8 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
   List<Map<String, dynamic>> _filteredStudents = [];
   int currentId = 1;
   String? selectedTestName;
-  bool _showDefaultImage = true;// Flag to control the visibility of the default image
-  bool _showDefaultTest = true;// Flag to control the visibility of the default image
+  bool _showDefaultImage = true;
+  bool _showDefaultTest = true;
 
   @override
   void initState() {
@@ -37,7 +37,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
         _filteredStudents = studentDetails;
         if (studentDetails.isNotEmpty) {
           currentId = studentDetails.map((e) => int.parse(e['id'])).reduce((a, b) => a > b ? a : b) + 1;
-          _showDefaultImage = false; // Hide default image if there are students
+          _showDefaultImage = false;
         }
       });
     }
@@ -62,57 +62,71 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
 
   void _editStudentDetails() async {
     List<String> newStudentNames = await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        List<TextEditingController> controllers = [TextEditingController()];
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('Edit Students'),
-              content: Container(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: controllers.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: TextField(
-                        controller: controllers[index],
-                        decoration: InputDecoration(hintText: "Enter Student Name"),
+        context: context,
+        builder: (BuildContext context) {
+          List<TextEditingController> controllers = [TextEditingController()];
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text("O'quvchi qo'shish"),
+                content: Container(
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: controllers.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: TextField(
+                          controller: controllers[index],
+                          decoration: InputDecoration(hintText: "O'quvchi ismi"),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: TextButton(
+                          child: Text("O'quvchi qo'shish"),
+                          onPressed: () {
+                            setState(() {
+                              controllers.add(TextEditingController());
+                            });
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  child: Text('Add Another Student'),
-                  onPressed: () {
-                    setState(() {
-                      controllers.add(TextEditingController());
-                    });
-                  },
-                ),
-                TextButton(
-                  child: Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop([]);
-                  },
-                ),
-                TextButton(
-                  child: Text('Save'),
-                  onPressed: () {
-                    List<String> names = controllers.map((controller) => controller.text).toList();
-                    Navigator.of(context).pop(names);
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
+                      SizedBox(height: 8.0), // Optional: add spacing between the buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            child: Text('Bekor qilish'),
+                            onPressed: () {
+                              Navigator.of(context).pop([]);
+                            },
+                          ),
+                          TextButton(
+                            child: Text('Saqlash'),
+                            onPressed: () {
+                              List<String> names = controllers.map((controller) => controller.text).toList();
+                              Navigator.of(context).pop(names);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        }
     );
+
 
     if (newStudentNames.isNotEmpty) {
       setState(() {
@@ -129,7 +143,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
             currentId++;
           }
         }
-        _showDefaultImage = false; // Hide default image when students are added
+        _showDefaultImage = false;
       });
       _saveStudentDetails();
       _filteredStudents = studentDetails;
@@ -143,7 +157,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
           ? studentDetails
           : studentDetails.where((student) => student['testName'] == selectedTestName).toList();
       if (studentDetails.isEmpty) {
-        _showDefaultImage = true; // Show default image if no students are left
+        _showDefaultImage = true;
       }
     });
     _saveStudentDetails();
@@ -163,7 +177,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
         title: Text(widget.groupName),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: Icon(Icons.add,),
             onPressed: _editStudentDetails,
           ),
         ],
@@ -176,7 +190,8 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
               'Testlar',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-          ),_showDefaultTest
+          ),
+          _showDefaultTest
               ? Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -190,26 +205,31 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
               ],
             ),
           )
-
-          :Container(
+              : Container(
             height: 80,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: _savedTests.length,
               itemBuilder: (context, index) {
+                bool isSelected = _savedTests[index]['testName'] == selectedTestName;
                 return GestureDetector(
                   onTap: () => _filterStudentsByTestName(_savedTests[index]['testName']),
                   child: Card(
+                    color: isSelected ? Colors.blue : Colors.white,
                     margin: EdgeInsets.all(10),
                     child: Container(
-                      width: 100,
+                      width: 200,
                       padding: EdgeInsets.all(16),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             _savedTests[index]['testName'] ?? 'No Test Name',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -226,7 +246,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Students',
+                  "O'quvchilar",
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 _showDefaultImage
@@ -244,7 +264,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                     ],
                   ),
                 )
-                :ListView.builder(
+                    : ListView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: _filteredStudents.length,

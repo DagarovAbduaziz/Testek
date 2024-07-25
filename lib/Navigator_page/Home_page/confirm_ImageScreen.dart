@@ -31,7 +31,7 @@ class ConfirmImageScreen extends StatelessWidget {
               IconButton(
                 icon: Icon(Icons.replay, size: 30,),
                 onPressed: onRetake,
-                tooltip: 'Retry',
+                tooltip: 'Rety',
               ),
               IconButton(
                 icon: Icon(Icons.check, size: 30,),
