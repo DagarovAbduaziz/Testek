@@ -11,7 +11,7 @@ class GroupPage extends StatefulWidget {
 }
 
 class _GroupPageState extends State<GroupPage> {
-  final Uri _url = Uri.parse('https://online.publuu.com/596170/1336392');
+  final Uri _url = Uri.parse('https://drive.google.com/file/d/1PtUkd8xTf9ET-W5iT85L8kxMreDRJZxv/view?usp=drive_link');
   List<String> groups = [];
   Map<String, int> studentCounts = {};
   bool _showDefaultImage = true;

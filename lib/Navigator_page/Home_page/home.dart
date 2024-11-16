@@ -1,6 +1,7 @@
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_application/Navigator_page/Home_page/page/support_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -210,7 +211,7 @@ class _HomeState extends State<Home> {
       });
 
       try {
-        final url = Uri.parse('https://omrapi-48a67da55efc.herokuapp.com/');
+        final url = Uri.parse('https://fathomless-mesa-02157-479cf4303ad2.herokuapp.com/');
         final response = await http.post(
           url,
           headers: {
@@ -287,24 +288,29 @@ class _HomeState extends State<Home> {
         });
       } on TimeoutException catch (_) {
         setState(() {
-          _errorMessage = 'Serverga ulasnishda xatolik';
+          _errorMessage = 'Serverga ulanishda xatolik';
         });
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'An unexpected error occurred';
-        });
-      } finally {
+      }  finally {
         setState(() {
           _isLoading = false;
         });
       }
     } else {
       setState(() {
-        _errorMessage = 'No image to send or no test selected';
+        _errorMessage = 'Rasmda xatolik';
       });
     }
   }
+  Future<void> _navigateToSupport()async {
+    Map<String, dynamic>? result;
 
+    result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => YouTubeVideoPage(),
+      ),
+    );
+  }
 
   Future<void> _navigateToAnswerEntry({int? editIndex}) async {
     Map<String, dynamic>? result;
@@ -381,7 +387,7 @@ class _HomeState extends State<Home> {
         title: Image.asset('assets/img_1.png', width: 180, height: 50),
         actions: [
           FloatingActionButton(mini: true,
-            onPressed: _navigateToAnswerEntry,
+            onPressed: _navigateToSupport,
             backgroundColor: Colors.indigoAccent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
@@ -400,7 +406,7 @@ class _HomeState extends State<Home> {
               height: 40,
               width: 300,
               decoration: BoxDecoration(
-                color: Colors.lightBlueAccent,
+                color: Colors.blue,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
@@ -418,7 +424,7 @@ class _HomeState extends State<Home> {
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 20,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ), SizedBox(height: 15),

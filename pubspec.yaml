@@ -31,18 +31,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  path_provider: ^2.0.11
-  image_picker: ^0.8.4+4
+  path_provider: ^2.1.5
+  image_picker: ^0.8.8+5
   image: ^3.0.1
   path: ^1.8.0
-  flutter_image_compress: ^1.1.0
+  flutter_image_compress: ^2.3.0
   http: ^0.13.4
   curved_navigation_bar: ^1.0.6
   provider: ^6.1.2
-  shared_preferences: ^2.0.15
-  permission_handler: ^10.2.0
+  shared_preferences: ^2.3.3
+  permission_handler: ^11.3.1
   url_launcher: ^6.0.20
-
+  youtube_player_flutter: ^8.1.2
+#  flutter_inappwebview: ^5.8.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
